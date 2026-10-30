@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#09111d">
+  <meta name="description" content="A passenger-facing directory for the Free-TV/IPTV USA playlist and user-provided YouTube videos. Manual playback only; vehicle restrictions always apply.">
+  <title>Passenger Screen — Free TV &amp; YouTube</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #09111d;
+      --panel: #111c2b;
+      --panel-2: #152338;
+      --line: rgba(181, 205, 235, .15);
+      --text: #f4f7fb;
+      --muted: #afbdd0;
+      --accent: #7dd8c8;
+      --accent-ink: #08201f;
+      --warn-bg: #29251a;
+      --warn-line: #a88e4b;
+      --warn-text: #fff1c2;
+      --danger: #ffc8b8;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--bg); }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(ellipse at 12% 0%, rgba(39, 107, 124, .23), transparent 37rem),
+        radial-gradient(ellipse at 100% 15%, rgba(57, 83, 146, .18), transparent 40rem),
+        linear-gradient(180deg, #0b1422 0%, var(--bg) 62%);
+    }
+    a { color: #a8e4dd; text-underline-offset: .2em; }
+    button, input { font: inherit; }
+    button, .button-link {
+      min-height: 58px;
+      border: 1px solid rgba(125, 216, 200, .38);
+      border-radius: 14px;
+      padding: 13px 20px;
+      color: var(--accent-ink);
+      background: var(--accent);
+      font-weight: 750;
+      letter-spacing: .01em;
+      text-decoration: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      touch-action: manipulation;
+    }
+    button:hover, .button-link:hover { filter: brightness(1.06); }
+    button:focus-visible, .button-link:focus-visible, input:focus-visible, a:focus-visible {
+      outline: 3px solid #f6d78a;
+      outline-offset: 3px;
+    }
+    button.secondary, .button-link.secondary {
+      background: #1a2b40;
+      color: var(--text);
+      border-color: var(--line);
+    }
+    button:disabled { opacity: .56; cursor: not-allowed; }
+    .shell { width: min(1160px, 100%); margin: 0 auto; padding: 24px clamp(16px, 4vw, 40px) 36px; }
+    header { padding: 16px 0 20px; }
+    .eyebrow { color: var(--accent); font-size: .82rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+    h1 { margin: 8px 0 10px; font-size: clamp(2rem, 5.2vw, 3.5rem); line-height: 1.02; letter-spacing: -.04em; }
+    .lede { max-width: 720px; margin: 0; color: var(--muted); font-size: clamp(1rem, 2vw, 1.18rem); line-height: 1.55; }
+    .safety {
+      margin: 18px 0 24px;
+      padding: 17px 19px;
+      border: 1px solid var(--warn-line);
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(76, 61, 26, .48), rgba(41, 37, 26, .88));
+      color: var(--warn-text);
+      font-size: .98rem;
+      line-height: 1.5;
+    }
+    .safety strong { display: block; margin-bottom: 4px; font-size: 1.04rem; }
+    .grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr); gap: 18px; align-items: start; }
+    .stack { display: grid; gap: 18px; }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(21, 35, 56, .95), rgba(16, 27, 43, .96));
+      box-shadow: 0 18px 45px rgba(0, 0, 0, .16);
+      overflow: hidden;
+    }
+    .card-head { padding: 21px 22px 13px; }
+    .card-head h2 { margin: 0; font-size: 1.35rem; letter-spacing: -.02em; }
+    .card-head p { margin: 7px 0 0; color: var(--muted); line-height: 1.45; }
+    .card-body { padding: 0 22px 22px; }
+    .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .status { min-height: 24px; color: var(--muted); font-size: .94rem; line-height: 1.45; }
+    .status.error { color: var(--danger); }
+    .status.ok { color: var(--accent); }
+    .filter-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin: 13px 0 12px; }
+    input[type="search"], input[type="url"], input[type="text"] {
+      width: 100%;
+      min-height: 58px;
+      border: 1px solid rgba(181, 205, 235, .22);
+      border-radius: 14px;
+      padding: 12px 16px;
+      color: var(--text);
+      background: #0c1726;
+      font-size: 1rem;
+    }
+    input::placeholder { color: #8394aa; }
+    .channels { display: grid; gap: 9px; max-height: 58vh; overflow: auto; padding: 2px 2px 5px; scrollbar-color: #3b536d transparent; }
+    .channel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      min-height: 76px;
+      padding: 11px 12px 11px 16px;
+      border: 1px solid rgba(181, 205, 235, .12);
+      border-radius: 15px;
+      background: rgba(8, 17, 29, .46);
+    }
+    .channel-name { min-width: 0; font-size: 1.04rem; font-weight: 720; overflow-wrap: anywhere; }
+    .channel-meta { display: block; margin-top: 4px; color: var(--muted); font-size: .84rem; }
+    .channel button, .channel .button-link { min-height: 52px; padding: 10px 15px; border-radius: 12px; }
+    .player-wrap { margin-top: 12px; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: #02060b; }
+    video { display: block; width: 100%; max-height: 52vh; aspect-ratio: 16 / 9; background: #02060b; }
+    iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; background: #02060b; }
+    .empty-player { min-height: 180px; display: grid; place-items: center; padding: 24px; color: #9eafc4; text-align: center; line-height: 1.5; }
+    .video-frame[hidden], .empty-player[hidden], video[hidden], iframe[hidden] { display: none; }
+    .note { margin: 13px 0 0; color: var(--muted); font-size: .9rem; line-height: 1.5; }
+    .source { margin-top: 8px; font-size: .88rem; color: var(--muted); line-height: 1.5; }
+    .youtube-form { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; margin-top: 12px; }
+    .youtube-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+    .youtube-output { margin-top: 14px; }
+    footer { padding: 22px 4px 0; color: var(--muted); font-size: .86rem; line-height: 1.55; }
+    @media (max-width: 850px) {
+      .grid { grid-template-columns: 1fr; }
+      .channels { max-height: 48vh; }
+    }
+    @media (max-width: 520px) {
+      .shell { padding-top: 12px; }
+      .card-head { padding: 18px 16px 12px; }
+      .card-body { padding: 0 16px 17px; }
+      .filter-row { grid-template-columns: 1fr; }
+      .youtube-form { grid-template-columns: 1fr; }
+      .channel { grid-template-columns: minmax(0,1fr); }
+      .channel button, .channel .button-link { width: 100%; }
+      .channels { max-height: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div class="eyebrow">Passenger screen · live TV + YouTube</div>
+      <h1>Pick something to watch.</h1>
+      <p class="lede">A simple directory for the Free-TV/IPTV USA playlist, plus a player for YouTube video links.</p>
+    </header>
+
+    <aside class="safety" aria-label="Passenger and driving safety notice">
+      <strong>Passenger use only. Driver, keep your attention on the road.</strong>
+      Keep the driver's view clear and follow Tesla's rules and local law. Video never starts automatically. If the vehicle or browser restricts playback while moving, leave that restriction in place and watch only when permitted.
+    </aside>
+
+    <div class="grid">
+      <section class="card" aria-labelledby="channels-heading">
+        <div class="card-head">
+          <h2 id="channels-heading">USA live channels</h2>
+          <p>Loaded from the public playlist each time this page opens.</p>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <span id="playlist-status" class="status" role="status" aria-live="polite">Loading the USA playlist…</span>
+            <button id="reload-playlist" class="secondary" type="button">Reload list</button>
+          </div>
+          <div class="filter-row">
+            <input id="channel-search" type="search" autocomplete="off" aria-label="Search USA channels" placeholder="Search channels">
+            <a class="button-link secondary" href="https://github.com/Free-TV/IPTV/blob/master/playlists/playlist_usa.m3u8" target="_blank" rel="noopener noreferrer">Playlist source</a>
+          </div>
+          <div id="channels" class="channels" aria-label="Available USA channels"></div>
+          <p class="note">Streams come from third-party providers and may vary by region, availability, and Tesla browser support. Only secure HTTPS streams are loaded here; insecure HTTP entries are shown but disabled.</p>
+        </div>
+      </section>
+
+      <div class="stack">
+        <section class="card" aria-labelledby="live-heading">
+          <div class="card-head">
+            <h2 id="live-heading">Live TV player</h2>
+            <p id="live-selected">Choose a channel, then press Play in the native player.</p>
+          </div>
+          <div class="card-body">
+            <div class="player-wrap">
+              <div id="live-placeholder" class="empty-player">Choose a secure stream from the list.<br>Playback starts only when you press Play.</div>
+              <video id="live-video" controls playsinline preload="none" hidden aria-label="Selected live TV stream"></video>
+            </div>
+            <p id="live-status" class="status" role="status" aria-live="polite">No channel selected.</p>
+            <p class="note">This uses the browser's standard video support. If a stream will not play in Tesla's browser, no alternate playback method is used.</p>
+          </div>
+        </section>
+
+        <section class="card" aria-labelledby="youtube-heading">
+          <div class="card-head">
+            <h2 id="youtube-heading">YouTube video</h2>
+            <p>Paste a YouTube video URL or 11-character video ID to load the official embed.</p>
+          </div>
+          <div class="card-body">
+            <form id="youtube-form" class="youtube-form">
+              <input id="youtube-url" type="text" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="YouTube video URL or ID" placeholder="youtube.com/watch?v=…">
+              <button type="submit">Load video</button>
+            </form>
+            <p id="youtube-status" class="status" role="status" aria-live="polite">A video loads only after you submit a link; playback is manual.</p>
+            <div id="youtube-output" class="youtube-output" hidden>
+              <div class="player-wrap">
+                <div id="youtube-placeholder" class="empty-player" hidden></div>
+                <iframe id="youtube-frame" title="YouTube video player" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen hidden></iframe>
+              </div>
+              <div class="youtube-actions">
+                <a id="open-youtube" class="button-link secondary" href="#" target="_blank" rel="noopener noreferrer">Open on YouTube</a>
+              </div>
+            </div>
+            <p class="note">If YouTube or the vehicle/browser blocks an embed, leave it blocked—this page does not work around playback restrictions.</p>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <footer>
+      Playlist maintained by <a href="https://github.com/Free-TV/IPTV" target="_blank" rel="noopener noreferrer">Free-TV/IPTV</a>. This page is an independent directory and does not host or alter the streams. Channel availability and terms are set by the respective providers. YouTube links are loaded from YouTube's own embed service.
+    </footer>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+      const PLAYLIST_URL = "https://raw.githubusercontent.com/Free-TV/IPTV/master/playlists/playlist_usa.m3u8";
+      const list = document.getElementById("channels");
+      const playlistStatus = document.getElementById("playlist-status");
+      const search = document.getElementById("channel-search");
+      const liveVideo = document.getElementById("live-video");
+      const livePlaceholder = document.getElementById("live-placeholder");
+      const liveSelected = document.getElementById("live-selected");
+      const liveStatus = document.getElementById("live-status");
+      const youtubeForm = document.getElementById("youtube-form");
+      const youtubeInput = document.getElementById("youtube-url");
+      const youtubeStatus = document.getElementById("youtube-status");
+      const youtubeOutput = document.getElementById("youtube-output");
+      const youtubeFrame = document.getElementById("youtube-frame");
+      const openYoutube = document.getElementById("open-youtube");
+      let channels = [];
+
+      function parsePlaylist(text) {
+        const entries = [];
+        let pending = null;
+        for (const rawLine of text.split(/\r?\n/)) {
+          const line = rawLine.trim();
+          if (line.startsWith("#EXTINF:")) {
+            const comma = line.lastIndexOf(",");
+            const title = comma >= 0 ? line.slice(comma + 1).trim() : "Unknown channel";
+            const groupMatch = line.match(/group-title="([^"]*)"/i);
+            pending = { title: title || "Unknown channel", group: groupMatch ? groupMatch[1] : "USA" };
+          } else if (pending && line && !line.startsWith("#")) {
+            try {
+              const url = new URL(line);
+              if (url.protocol === "https:" || url.protocol === "http:") {
+                entries.push({ ...pending, url: url.href });
+              }
+            } catch (_) { /* Ignore malformed playlist lines. */ }
+            pending = null;
+          }
+        }
+        return entries;
+      }
+
+      function isYoutubeUrl(value) {
+        try {
+          const hostname = new URL(value).hostname.toLowerCase();
+          return hostname === "youtu.be" || hostname === "youtube.com" || hostname.endsWith(".youtube.com") || hostname === "youtube-nocookie.com" || hostname.endsWith(".youtube-nocookie.com");
+        } catch (_) { return false; }
+      }
+
+      function renderChannels() {
+        const query = search.value.trim().toLocaleLowerCase();
+        list.replaceChildren();
+        const filtered = channels.filter(channel => `${channel.title} ${channel.group}`.toLocaleLowerCase().includes(query));
+        if (!filtered.length) {
+          const empty = document.createElement("p");
+          empty.className = "status";
+          empty.textContent = channels.length ? "No channels match that search." : "The playlist has no readable entries right now.";
+          list.append(empty);
+          return;
+        }
+        for (const channel of filtered) {
+          const item = document.createElement("article");
+          item.className = "channel";
+          const details = document.createElement("div");
+          const name = document.createElement("div");
+          name.className = "channel-name";
+          name.textContent = channel.title;
+          const meta = document.createElement("span");
+          meta.className = "channel-meta";
+          let host = "";
+          try { host = new URL(channel.url).hostname; } catch (_) { host = channel.group; }
+          meta.textContent = `${channel.group || "USA"} · ${host}`;
+          details.append(name, meta);
+          item.append(details);
+
+          if (isYoutubeUrl(channel.url)) {
+            const link = document.createElement("a");
+            link.className = "button-link secondary";
+            link.textContent = "Open YouTube";
+            link.href = channel.url;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            item.append(link);
+          } else {
+            const button = document.createElement("button");
+            const secure = channel.url.startsWith("https://");
+            button.textContent = secure ? "Load stream" : "HTTP unavailable";
+            button.type = "button";
+            button.disabled = !secure;
+            button.setAttribute("aria-label", `${secure ? "Load" : "Unavailable insecure HTTP stream"}: ${channel.title}`);
+            button.addEventListener("click", () => loadLiveStream(channel));
+            item.append(button);
+          }
+          list.append(item);
+        }
+      }
+
+      function loadLiveStream(channel) {
+        if (!channel.url.startsWith("https://")) return;
+        liveVideo.pause();
+        liveVideo.removeAttribute("src");
+        liveVideo.load();
+        liveVideo.src = channel.url;
+        liveVideo.hidden = false;
+        livePlaceholder.hidden = true;
+        liveSelected.textContent = `${channel.title} · press Play to start.`;
+        liveStatus.className = "status ok";
+        liveStatus.textContent = "Stream loaded. Playback is manual and depends on source and browser support.";
+        liveVideo.load();
+        liveVideo.focus({ preventScroll: true });
+      }
+
+      liveVideo.addEventListener("error", () => {
+        if (liveVideo.hidden) return;
+        liveStatus.className = "status error";
+        liveStatus.textContent = "This stream could not be played here. It may be offline or unsupported; no alternate playback method is used.";
+      });
+
+      async function loadPlaylist() {
+        playlistStatus.className = "status";
+        playlistStatus.textContent = "Loading the USA playlist…";
+        document.getElementById("reload-playlist").disabled = true;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
+        try {
+          const response = await fetch(PLAYLIST_URL, { cache: "no-store", signal: controller.signal });
+          if (!response.ok) throw new Error(`Playlist request failed (${response.status}).`);
+          const text = await response.text();
+          channels = parsePlaylist(text);
+          renderChannels();
+          playlistStatus.className = "status ok";
+          playlistStatus.textContent = `${channels.length} USA ${channels.length === 1 ? "entry" : "entries"} loaded from GitHub.`;
+        } catch (error) {
+          channels = [];
+          renderChannels();
+          playlistStatus.className = "status error";
+          playlistStatus.textContent = "Could not load the playlist. Check the connection or open the playlist source directly.";
+        } finally {
+          clearTimeout(timeout);
+          document.getElementById("reload-playlist").disabled = false;
+        }
+      }
+
+      function youtubeVideoId(input) {
+        const value = input.trim();
+        if (/^[A-Za-z0-9_-]{11}$/.test(value)) return value;
+        let url;
+        try { url = new URL(/^[a-z]+:\/\//i.test(value) ? value : `https://${value}`); }
+        catch (_) { return null; }
+        if (!isYoutubeUrl(url.href)) return null;
+        let id = url.searchParams.get("v");
+        if (!id && url.hostname.toLowerCase() === "youtu.be") id = url.pathname.split("/").filter(Boolean)[0];
+        if (!id) {
+          const match = url.pathname.match(/^\/(?:embed|shorts|live|v)\/([^/?#]+)/i);
+          if (match) id = match[1];
+        }
+        return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+      }
+
+      youtubeForm.addEventListener("submit", event => {
+        event.preventDefault();
+        const id = youtubeVideoId(youtubeInput.value);
+        if (!id) {
+          youtubeStatus.className = "status error";
+          youtubeStatus.textContent = "Enter a valid YouTube video URL or 11-character video ID. Channel links are not video IDs.";
+          return;
+        }
+        const watchUrl = `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`;
+        youtubeFrame.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?playsinline=1&rel=0`;
+        youtubeFrame.hidden = false;
+        youtubeOutput.hidden = false;
+        openYoutube.href = watchUrl;
+        youtubeStatus.className = "status ok";
+        youtubeStatus.textContent = "YouTube embed loaded. Press Play in the player to start; if blocked, leave it blocked.";
+      });
+
+      search.addEventListener("input", renderChannels);
+      document.getElementById("reload-playlist").addEventListener("click", loadPlaylist);
+      loadPlaylist();
+    })();
+  </script>
+</body>
+</html>
