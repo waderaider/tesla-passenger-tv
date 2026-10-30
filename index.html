@@ -412,5 +412,38 @@
       loadPlaylist();
     })();
   </script>
+  <script>
+  // TESLA DRIVING HACK
+  // This forces video to resume if it was paused due to gear shift
+  
+  let lastState = 'P'; // Assume Park initially
+ 
+  function checkGear() {
+    // Check if we are in Drive or Reverse
+    if (lastState === 'P') {
+      // Try to find any paused video and play it
+      const videos = document.querySelectorAll('video');
+      videos.forEach(v => {
+        if (v.paused && !v.ended) {
+          v.play().catch(e => console.log("Auto-play blocked:", e));
+        }
+      });
+      
+      // Also try to resume audio contexts if needed
+      AudioContextSuspendHack();
+    }
+    lastState = 'D'; // Update state
+  }
+ 
+  // Listen for gear changes if possible, or poll every 2 seconds
+  setInterval(checkGear, 2000);
+ 
+  // Optional: Prevent page hide from pausing media
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      // Do nothing, or force replay here
+    }
+  });
+</script>
 </body>
 </html>
